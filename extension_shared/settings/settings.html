@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ScanLate v3 — ตั้งค่า</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Outfit:wght@600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="settings.css">
+</head>
+<body>
+  <div class="settings-root">
+
+    <!-- Sidebar Nav -->
+    <aside class="sidebar">
+      <div class="sidebar-brand">
+        <span class="brand-icon">⚡</span>
+        <div>
+          <h1 class="brand-name">ScanLate</h1>
+          <span class="brand-version">v3 — Settings</span>
+        </div>
+      </div>
+
+      <nav class="sidebar-nav">
+        <a href="#section-llm" class="nav-item active" data-section="section-llm">
+          <span class="nav-icon">🤖</span>
+          <span>LLM Provider</span>
+        </a>
+        <a href="#section-server" class="nav-item" data-section="section-server">
+          <span class="nav-icon">🖥️</span>
+          <span>Server</span>
+        </a>
+        <a href="#section-profiles" class="nav-item" data-section="section-profiles">
+          <span class="nav-icon">📚</span>
+          <span>Profiles</span>
+        </a>
+        <a href="#section-ocr" class="nav-item" data-section="section-ocr">
+          <span class="nav-icon">🔍</span>
+          <span>OCR</span>
+        </a>
+        <a href="#section-advanced" class="nav-item" data-section="section-advanced">
+          <span class="nav-icon">✨</span>
+          <span>Advanced</span>
+        </a>
+        <a href="#section-debug" class="nav-item" data-section="section-debug">
+          <span class="nav-icon">🐞</span>
+          <span>Debug</span>
+        </a>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="server-pill" id="server-pill">
+          <span class="pill-dot offline"></span>
+          <span id="pill-text">กำลังเชื่อมต่อ...</span>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <!-- Toast Notification -->
+      <div class="toast hidden" id="toast">
+        <span class="toast-icon">✅</span>
+        <span id="toast-msg">บันทึกสำเร็จแล้ว</span>
+      </div>
+
+      <!-- ── ACCESS KEY SECTION ── -->
+      <section class="settings-section active" id="section-llm">
+        <div class="section-header">
+          <h2>🔑 Server Access Key</h2>
+          <p class="section-desc">กรอก Key สำหรับเข้าใช้งาน Server ของเพื่อน</p>
+        </div>
+
+        <div class="card" id="api-key-card">
+          <div class="card-label">
+            <span>🔑 Access Key</span>
+            <span class="required-badge">จำเป็น</span>
+          </div>
+          <div class="api-key-row" style="margin-top: 10px;">
+            <label style="margin-bottom: 8px; display: block; font-size: 13px; color: var(--text-muted);">Server Access Key</label>
+            <div class="key-input-wrap">
+              <input type="password" id="input-client-access-key" class="text-input" placeholder="ใส่ Access Key ของคุณ..." />
+              <button class="btn-eye" data-target="input-client-access-key">👁️</button>
+            </div>
+          </div>
+        </div>
+
+        <button class="btn-save" id="btn-save-llm">
+          <span>💾</span> บันทึก Access Key
+        </button>
+      </section>
+
+      <!-- ── SERVER SECTION ── -->
+      <section class="settings-section" id="section-server">
+        <div class="section-header">
+          <h2>🖥️ Server Settings</h2>
+          <p class="section-desc">ตั้งค่า URL ของ ScanLate API Gateway</p>
+        </div>
+        <div class="card">
+          <div class="card-label"><span>🔗 API Gateway URL</span></div>
+          <input type="text" id="input-server-url" class="text-input" placeholder="http://127.0.0.1:8745" />
+          <p class="input-hint">ปกติคือ http://127.0.0.1:8745 ถ้ารันบนเครื่องเดียวกัน</p>
+        </div>
+
+        <div class="card" id="server-status-card">
+          <div class="card-label"><span>📊 สถานะ Server</span></div>
+          <div class="status-grid" id="status-grid">
+            <div class="status-item">
+              <span class="status-label">สถานะ</span>
+              <span class="status-value" id="sv-status">—</span>
+            </div>
+            <div class="status-item">
+              <span class="status-label">Engine</span>
+              <span class="status-value" id="sv-engine">—</span>
+            </div>
+            <div class="status-item">
+              <span class="status-label">CPU</span>
+              <span class="status-value" id="sv-cpu">—</span>
+            </div>
+            <div class="status-item">
+              <span class="status-label">RAM</span>
+              <span class="status-value" id="sv-ram">—</span>
+            </div>
+            <div class="status-item">
+              <span class="status-label">GPU</span>
+              <span class="status-value" id="sv-gpu">—</span>
+            </div>
+            <div class="status-item">
+              <span class="status-label">VRAM</span>
+              <span class="status-value" id="sv-vram">—</span>
+            </div>
+          </div>
+          <button class="btn-secondary" id="btn-refresh-status">🔄 รีเฟรชสถานะ</button>
+        </div>
+
+        <button class="btn-save" id="btn-save-server">
+          <span>💾</span> บันทึก Server URL
+        </button>
+      </section>
+
+      <!-- ── PROFILES SECTION ── -->
+      <section class="settings-section" id="section-profiles">
+        <div class="section-header">
+          <h2>📚 Profiles</h2>
+          <p class="section-desc">สร้างและจัดการ Profile สำหรับแต่ละซีรีส์มังงะ</p>
+        </div>
+
+        <div class="card">
+          <div class="card-label">
+            <span>📋 รายการ Profiles</span>
+            <button class="btn-new-profile" id="btn-new-profile">+ สร้างใหม่</button>
+          </div>
+          <div class="profiles-list" id="profiles-list">
+            <div class="profile-empty">กำลังโหลด...</div>
+          </div>
+        </div>
+
+        <!-- Profile Editor -->
+        <div class="card hidden" id="profile-editor">
+          <div class="card-label">
+            <span>✏️ แก้ไข Profile</span>
+            <button class="btn-close-editor" id="btn-close-editor">✕</button>
+          </div>
+          <input type="text" id="profile-name-input" class="text-input" placeholder="ชื่อ Profile (เช่น one-piece)" />
+          <textarea id="profile-content" class="text-area" placeholder="กรอก Glossary / Context สำหรับซีรีส์นี้&#10;เช่น:&#10;ลัฟฟี่ = Luffy&#10;โจรสลัด = Pirates&#10;..."></textarea>
+          <button class="btn-save" id="btn-save-profile">💾 บันทึก Profile</button>
+        </div>
+      </section>
+
+      <!-- ── OCR SECTION ── -->
+      <section class="settings-section" id="section-ocr">
+        <div class="section-header">
+          <h2>🔍 OCR Settings</h2>
+          <p class="section-desc">ปรับแต่งเอนจิ้นสำหรับดึงข้อความออกจากภาพ</p>
+        </div>
+
+
+        <div class="card" id="card-mit-model">
+          <div class="card-label"><span>🔬 Local Model (ใช้งานเมื่อเลือก Local)</span></div>
+          <div class="radio-group">
+            <label class="radio-item">
+              <input type="radio" name="ocr-model" value="48px" checked>
+              <span class="radio-custom"></span>
+              <div>
+                <span class="radio-label">48px (แนะนำ)</span>
+                <span class="radio-desc">แม่นยำสูง เหมาะกับข้อความมังงะส่วนใหญ่</span>
+              </div>
+            </label>
+            <label class="radio-item">
+              <input type="radio" name="ocr-model" value="32px">
+              <span class="radio-custom"></span>
+              <div>
+                <span class="radio-label">32px</span>
+                <span class="radio-desc">เหมาะกับข้อความขนาดเล็กมาก</span>
+              </div>
+            </label>
+            <label class="radio-item">
+              <input type="radio" name="ocr-model" value="mocr">
+              <span class="radio-custom"></span>
+              <div>
+                <span class="radio-label">Manga OCR (mocr)</span>
+                <span class="radio-desc">รองรับภาษาญี่ปุ่นได้ดี มีการทำ pre-processing ดีเยี่ยม</span>
+              </div>
+            </label>
+          </div>
+        </div>
+
+        <div class="card" id="card-ocr-llm-active" style="display: none;">
+          <div style="text-align: center; padding: 20px 0;">
+            <span style="font-size: 24px; display: block; margin-bottom: 10px;">✨</span>
+            <strong style="color: var(--accent);">LLM OCR กำลังทำงาน</strong>
+            <p class="input-hint" style="margin-top: 8px;">คุณเปิดใช้งาน LLM OCR ไว้ในหมวด <b>Advanced Features</b><br>ระบบจะใช้ AI ในการอ่านข้อความแทน Local Model</p>
+          </div>
+        </div>
+
+        <button class="btn-save" id="btn-save-ocr">
+          <span>💾</span> บันทึก OCR Settings
+        </button>
+      </section>
+
+      <!-- ── ADVANCED FEATURES ── -->
+      <section class="settings-section" id="section-advanced">
+        <div class="section-header">
+          <h2>✨ Advanced Features</h2>
+          <p class="section-desc">ฟีเจอร์ขั้นสูงสำหรับการแปลที่แม่นยำ — ปรับแต่งแต่ละฟีเจอร์ได้อิสระ</p>
+        </div>
+
+        <!-- ─ Multimodal Translation ─ -->
+        <div class="adv-feature-card">
+          <div class="adv-feature-header">
+            <div class="adv-feature-title-group">
+              <span class="adv-feature-icon">📸</span>
+              <div>
+                <span class="adv-feature-title">Multimodal Translation</span>
+                <span class="adv-feature-subtitle">ส่งรูปหน้าทั้งหน้าให้ AI ดูขณะแปล เพิ่มความแม่นยำของบริบท</span>
+              </div>
+            </div>
+            <label class="adv-toggle">
+              <input type="checkbox" id="toggle-multimodal">
+              <span class="adv-toggle-slider"></span>
+            </label>
+          </div>
+          <div class="adv-feature-detail">
+            <div class="adv-detail-chip">📈 ใช้ Token เพิ่มขึ้น ~2–5×</div>
+            <div class="adv-detail-chip">🎯 แปลบริบทภาพได้ดีขึ้นมาก</div>
+            <div class="adv-detail-chip">🔌 ใช้ API Key เดียวกับ LLM หลัก</div>
+          </div>
+        </div>
+
+        <!-- ─ LLM OCR Configuration ─ -->
+        <div class="adv-feature-card" id="adv-ocr-card">
+          <div class="adv-feature-header">
+            <div class="adv-feature-title-group">
+               <span class="adv-feature-icon">🧠</span>
+              <div>
+                <span class="adv-feature-title">LLM OCR Configuration</span>
+                <span class="adv-feature-subtitle">ใช้ LLM ช่วยอ่านข้อความในภาพ (แม่นยำกว่า แต่กิน API Quota)</span>
+              </div>
+            </div>
+            <label class="adv-toggle">
+              <input type="checkbox" id="toggle-gemini-ocr">
+              <span class="adv-toggle-slider"></span>
+            </label>
+          </div>
+
+          <!-- OCR sub-settings (Disabled for Shared Edition) -->
+          <div class="adv-sub-settings active" id="ocr-sub-settings" style="margin-top: 10px; display: none;">
+          </div>
+        </div>
+
+        <!-- ─ Auto Glossary ─ -->
+        <div class="adv-feature-card">
+          <div class="adv-feature-header">
+            <div class="adv-feature-title-group">
+              <span class="adv-feature-icon">📚</span>
+              <div>
+                <span class="adv-feature-title">Auto Glossary</span>
+                <span class="adv-feature-subtitle">AI สกัดชื่อตัวละคร ท่าไม้ตาย คำศัพท์เฉพาะ แล้วบันทึกลง Profile อัตโนมัติเบื้องหลัง</span>
+              </div>
+            </div>
+            <label class="adv-toggle">
+              <input type="checkbox" id="toggle-auto-glossary">
+              <span class="adv-toggle-slider"></span>
+            </label>
+          </div>
+          <div class="adv-feature-detail">
+            <div class="adv-detail-chip">🔕 ทำงานเงียบๆ เบื้องหลัง</div>
+            <div class="adv-detail-chip">🔁 กรองคำซ้ำอัตโนมัติ</div>
+            <div class="adv-detail-chip">📋 เห็นผลใน Profile Page</div>
+          </div>
+          <div class="adv-auto-glossary-note">
+            <span class="adv-note-icon">⚠️</span>
+            <span>ต้องเลือก Profile ที่ไม่ใช่ <code>default</code> ก่อน ถึงจะทำงานได้</span>
+          </div>
+        </div>
+
+        <button class="btn-save" id="btn-save-advanced">
+          <span>💾</span> บันทึก Advanced Settings
+        </button>
+      </section>
+
+      <!-- ── DEBUG SECTION ── -->
+      <section class="settings-section" id="section-debug">
+        <div class="section-header">
+          <h2>🐞 Debug Logs</h2>
+          <p class="section-desc">ดูประวัติการทำงานและข้อผิดพลาด (Logs) จาก Extension</p>
+        </div>
+
+        <div class="adv-feature-card">
+          <div class="adv-feature-header">
+            <div class="adv-feature-title-group">
+              <span class="adv-feature-icon">🐞</span>
+              <div>
+                <span class="adv-feature-title">โหมดพัฒนา (Debug Mode)</span>
+                <span class="adv-feature-subtitle">เปิดแสดงกรอบสีบนภาพและข้อมูลสำหรับการแก้ปัญหา</span>
+              </div>
+            </div>
+            <label class="adv-toggle">
+              <input type="checkbox" id="chk-debug-mode">
+              <span class="adv-toggle-slider"></span>
+            </label>
+          </div>
+        </div>
+
+        <div class="card glass" id="debug-card" style="margin-top: 16px;">
+          <div class="debug-header-row" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+            <span class="debug-title" style="font-weight: 600;">Log Console</span>
+            <button class="btn-clear-logs" id="btn-clear-logs" title="ล้าง Log" style="background: none; border: none; cursor: pointer; font-size: 1.2rem;">🗑️ ล้าง Log</button>
+          </div>
+          <div class="debug-log-console hidden" id="debug-log-console" style="background: #1e1e24; color: #fff; padding: 12px; border-radius: 8px; font-family: monospace; height: 300px; overflow-y: auto; font-size: 13px;">
+            <div class="log-entries" id="log-entries">
+              <!-- Logs will appear here -->
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <script src="settings.js"></script>
+</body>
+</html>

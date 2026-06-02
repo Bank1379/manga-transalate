@@ -1,0 +1,46 @@
+{
+  "tasks": [
+    {
+      "id": "T1",
+      "name": "Setup M1 Environment & Scripts",
+      "status": "done",
+      "input_state": "Fresh repository without runtime folder or setup scripts.",
+      "expected_output_contract": "ScanLate.bat and scripts/setup.bat are created. The setup script can install Python, PyTorch, dependencies, clone the engine, patch share.py, and download models."
+    },
+    {
+      "id": "T2",
+      "name": "Implement M1 ScanLate API (Launcher & Health)",
+      "status": "done",
+      "input_state": "T1 completed. Setup script exists.",
+      "expected_output_contract": "FastAPI server running on port 8745. /status returns engine health, GPU info. mit_process.py starts the engine in OCR-only mode."
+    },
+    {
+      "id": "T3",
+      "name": "Implement M2 Engine Client & LLM Translation",
+      "status": "done",
+      "input_state": "M1 API is functional and engine is healthy.",
+      "expected_output_contract": "mit_client.py can fetch /get_text. llm/client.py can translate batch. POST /translate and /translate/batch endpoints return valid JSON bubbles."
+    },
+    {
+      "id": "T4",
+      "name": "Implement M3 Chrome Extension Basics (Manifest, Popup, SW)",
+      "status": "done",
+      "input_state": "API server provides translation endpoints.",
+      "expected_output_contract": "Manifest V3 is valid. Service worker handles state in chrome.storage.session. Popup UI displays server status and translates."
+    },
+    {
+      "id": "T5",
+      "name": "Implement M3 Chrome Extension Content Script & Renderer",
+      "status": "done",
+      "input_state": "Extension basics are working.",
+      "expected_output_contract": "content.js auto-detects manga images, performs color sampling, auto-font sizing, and creates CSS overlays. content.css provides styles."
+    },
+    {
+      "id": "T6",
+      "name": "Implement M4 Cache System",
+      "status": "done",
+      "input_state": "Translation pipeline and extension are fully working.",
+      "expected_output_contract": "server/cache/manager.py caches JSON responses by composite key. Repeated requests return cached: true."
+    }
+  ]
+}

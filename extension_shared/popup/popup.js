@@ -1,0 +1,255 @@
+// ScanLate v3 Popup Controller
+
+document.addEventListener("DOMContentLoaded", async () => {
+  // Elements
+  const statusDot = document.querySelector(".status-dot");
+  const statusText = document.getElementById("status-text");
+  const offlineOverlay = document.getElementById("offline-overlay");
+  const profileSelect = document.getElementById("profile-select");
+  const langSelect = document.getElementById("lang-select");
+  const btnTranslate = document.getElementById("btn-translate");
+  const btnCancel = document.getElementById("btn-cancel");
+  const btnToggleView = document.getElementById("btn-toggle-view");
+  const toggleRow = document.getElementById("toggle-row");
+  const statusCard = document.getElementById("status-card");
+  const progressFill = document.getElementById("progress-bar-fill");
+  const progressPercent = document.getElementById("status-progress-percent");
+  const progressMsg = document.getElementById("status-progress-msg");
+  const progressSub = document.getElementById("status-progress-sub");
+  
+  const btnRetry = document.getElementById("btn-retry");
+  const btnOptions = document.getElementById("btn-options");
+  const btnOptionsOffline = document.getElementById("btn-options-offline");
+  const linkCreateProfile = document.getElementById("link-create-profile");
+
+
+
+  // Get active tab context (allow popup to initialize connection check even if active tab is unavailable)
+  const [activeTab] = await chrome.tabs.query({ active: true, currentWindow: true });
+  const tabId = activeTab ? activeTab.id : null;
+
+  // Initialize and check server connection
+  async function checkServerAndLoad() {
+    statusText.textContent = "กำลังเชื่อมต่อ...";
+    statusDot.className = "status-dot offline";
+    btnTranslate.disabled = true;
+    btnTranslate.classList.add("disabled");
+
+    try {
+      // Send query to service worker
+      const response = await chrome.runtime.sendMessage({ action: "checkServer" });
+      
+      if (response && response.status && response.status.status === "online") {
+        // Server is Online
+        statusDot.className = "status-dot online";
+        statusText.textContent = "เชื่อมต่อแล้ว";
+        offlineOverlay.classList.add("hidden");
+        
+        // Populate profile selector
+        const profiles = response.profiles || [];
+        populateProfiles(profiles);
+        
+        // Restore tab state
+        if (tabId) {
+          await restoreTabState();
+        }
+      } else {
+        // Server is Offline
+        showOffline();
+      }
+    } catch (e) {
+      console.error("Connection check failed:", e);
+      showOffline();
+    }
+  }
+
+  function showOffline() {
+    statusDot.className = "status-dot offline";
+    statusText.textContent = "ไม่ได้เชื่อมต่อ";
+    offlineOverlay.classList.remove("hidden");
+    btnTranslate.disabled = true;
+    btnTranslate.classList.add("disabled");
+  }
+
+  function populateProfiles(profiles) {
+    // Keep placeholder but clear other options
+    profileSelect.innerHTML = '<option value="" disabled selected>-- เลือก Profile --</option>';
+    
+    profiles.forEach(name => {
+      const option = document.createElement("option");
+      option.value = name;
+      option.textContent = name;
+      profileSelect.appendChild(option);
+    });
+  }
+
+  async function restoreTabState() {
+    const res = await chrome.runtime.sendMessage({ action: "getTabState", tabId });
+    if (res && res.state) {
+      const state = res.state;
+      
+      // Restore selected profile
+      if (state.profileName && profileSelect.querySelector(`option[value="${state.profileName}"]`)) {
+        profileSelect.value = state.profileName;
+      }
+      
+      // Restore language
+      langSelect.value = state.sourceLang || "auto";
+      
+
+
+      // Adjust UI based on status
+      updateUIStatus(state);
+    }
+  }
+
+  function updateUIStatus(state) {
+    const hasProfile = !!profileSelect.value;
+    
+    if (state.status === "translating") {
+      // In progress
+      profileSelect.disabled = true;
+      langSelect.disabled = true;
+      btnTranslate.disabled = true;
+      btnTranslate.classList.add("disabled");
+      btnTranslate.style.display = "none";
+      btnCancel.classList.remove("hidden");
+      btnCancel.style.display = "block";
+      toggleRow.classList.add("hidden");
+      statusCard.classList.remove("hidden");
+      
+      // Calculate progress
+      const percent = state.totalCount > 0 ? Math.round((state.translatedCount / state.totalCount) * 100) : 0;
+      progressFill.style.width = `${percent}%`;
+      progressPercent.textContent = `${percent}%`;
+      progressMsg.textContent = "กำลังดำเนินการแปล...";
+      progressSub.textContent = `กำลังประมวลผลรูปที่ ${state.translatedCount} จากทั้งหมด ${state.totalCount} รูป`;
+      
+    } else {
+      // Idle or completed
+      profileSelect.disabled = false;
+      langSelect.disabled = false;
+      
+      btnTranslate.disabled = false;
+      btnTranslate.classList.remove("disabled");
+      btnTranslate.style.display = "block";
+      btnCancel.classList.add("hidden");
+      btnCancel.style.display = "none";
+      
+      statusCard.classList.add("hidden");
+
+      if (state.status === "completed") {
+        toggleRow.classList.remove("hidden");
+      } else {
+        toggleRow.classList.add("hidden");
+      }
+    }
+  }
+
+  // Handle updates to profile/language controls
+  async function saveControlsState() {
+    if (!tabId) return;
+    const profileName = profileSelect.value;
+    const sourceLang = langSelect.value;
+    const updates = { profileName, sourceLang };
+    const res = await chrome.runtime.sendMessage({ action: "updateTabState", tabId, updates });
+    if (res && res.state) {
+      updateUIStatus(res.state);
+    }
+  }
+
+  profileSelect.addEventListener("change", saveControlsState);
+  langSelect.addEventListener("change", saveControlsState);
+
+
+
+  // Trigger Translation Command
+  btnTranslate.addEventListener("click", async () => {
+    if (!tabId) return;
+    const profileName = profileSelect.value || "default";
+    const sourceLang = langSelect.value;
+
+    // 1. Update state to translating
+    const updates = {
+      status: "translating",
+      translatedCount: 0,
+      totalCount: 0
+    };
+    await chrome.runtime.sendMessage({ action: "updateTabState", tabId, updates });
+
+    try {
+      // 2. Instruct service worker to inject content script (if not already)
+      await chrome.runtime.sendMessage({ action: "injectContentScript", tabId });
+
+      // 3. Ping content script to start page scans
+      chrome.tabs.sendMessage(tabId, {
+        action: "startTranslation",
+        profileName,
+        sourceLang
+      });
+      
+    } catch (e) {
+      console.error("Translation initiation failed:", e);
+      // Reset state on failure
+      await chrome.runtime.sendMessage({
+        action: "updateTabState",
+        tabId,
+        updates: { status: "idle" }
+      });
+    }
+  });
+
+  // Cancel Translation Command
+  btnCancel.addEventListener("click", async () => {
+    if (!tabId) return;
+    try {
+        await chrome.runtime.sendMessage({ action: "cancelTranslation", tabId });
+        chrome.tabs.sendMessage(tabId, { action: "cancelTranslation" }).catch(() => {});
+        await chrome.runtime.sendMessage({
+            action: "updateTabState",
+            tabId,
+            updates: { status: "idle" }
+        });
+    } catch (e) {
+        console.error("Failed to cancel translation:", e);
+    }
+  });
+
+  // Toggle translated overlays view
+  btnToggleView.addEventListener("click", async () => {
+    if (!tabId) return;
+    try {
+      chrome.tabs.sendMessage(tabId, { action: "toggleView" });
+    } catch (e) {
+      console.error("Failed to toggle view in tab:", e);
+    }
+  });
+
+  // Listen for background state broadcasts (e.g. from page translation completion)
+  chrome.runtime.onMessage.addListener((message) => {
+    if (tabId && message.action === "tabStateChanged" && message.tabId === tabId) {
+      updateUIStatus(message.state);
+    }
+  });
+
+  // Page Redirection buttons
+  btnRetry.addEventListener("click", checkServerAndLoad);
+  
+  btnOptions.addEventListener("click", () => {
+    chrome.runtime.openOptionsPage();
+  });
+
+  if (btnOptionsOffline) {
+    btnOptionsOffline.addEventListener("click", () => {
+      chrome.runtime.openOptionsPage();
+    });
+  }
+
+  linkCreateProfile.addEventListener("click", (e) => {
+    e.preventDefault();
+    chrome.runtime.openOptionsPage();
+  });
+
+  // Run initial server check
+  checkServerAndLoad();
+});

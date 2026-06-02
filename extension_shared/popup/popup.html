@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ScanLate v3</title>
+  <!-- Load Premium Font (Inter & Outfit) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Outfit:wght@600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="app-container">
+    <!-- Header -->
+    <header class="app-header">
+      <div class="logo-area">
+        <span class="logo-icon">⚡</span>
+        <h1 class="logo-text">ScanLate <span class="version-tag">v3</span></h1>
+      </div>
+      <div class="server-status" id="server-status">
+        <span class="status-dot offline"></span>
+        <span class="status-text" id="status-text">กำลังตรวจสอบ...</span>
+      </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="app-main">
+      
+      <!-- Offline State Overlay -->
+      <div class="offline-overlay hidden" id="offline-overlay">
+        <div class="offline-card">
+          <span class="warning-icon">⚠️</span>
+          <h2>เซิร์ฟเวอร์ออฟไลน์</h2>
+          <p>กรุณารันไฟล์ <code>ScanLate.bat</code> ก่อนเริ่มใช้งาน</p>
+          <button class="btn btn-primary btn-retry" id="btn-retry">
+            <span>🔄</span> ลองใหม่อีกครั้ง
+          </button>
+          <button class="btn btn-secondary btn-options-offline" id="btn-options-offline" style="margin-top: 10px;">
+            <span>⚙️</span> ตั้งค่า (Settings)
+          </button>
+        </div>
+      </div>
+
+      <!-- Config Card (Select Profile & Source Lang) -->
+      <div class="card glass" id="config-card">
+        <!-- Series Profile Selection -->
+        <div class="input-group">
+          <label for="profile-select">📚 เลือกมังงะเรื่องนี้ (Profile)</label>
+          <div class="select-wrapper">
+            <select id="profile-select" class="select-control">
+              <option value="" disabled selected>-- เลือก Profile --</option>
+            </select>
+          </div>
+          <div class="helper-links">
+            <a href="#" class="link-btn" id="link-create-profile">+ สร้าง Profile ใหม่</a>
+          </div>
+        </div>
+
+        <!-- Source Language Selection -->
+        <div class="input-group">
+          <label for="lang-select">🌐 ภาษาต้นฉบับ (Source Language)</label>
+          <div class="lang-row">
+            <div class="select-wrapper flex-grow">
+              <select id="lang-select" class="select-control">
+                <option value="auto" selected>🤖 Auto-Detect (AI)</option>
+                <option value="ja">Japanese (ญี่ปุ่น)</option>
+                <option value="ko">Korean (เกาหลี)</option>
+                <option value="zh">Chinese (จีน)</option>
+                <option value="en">English (อังกฤษ)</option>
+              </select>
+            </div>
+            <div class="arrow-indicator">➔</div>
+            <div class="target-lang-tag">ไทย</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Action Card -->
+      <div class="action-area" id="action-area">
+        <button class="btn btn-translate disabled" id="btn-translate" disabled>
+          <span class="btn-shine"></span>
+          <span class="icon">⚡</span> แปลหน้ามังงะทั้งหน้า
+        </button>
+
+        <button class="btn btn-cancel hidden" id="btn-cancel" style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); color: #ef4444; width: 100%; display: none; padding: 12px; border-radius: 8px; font-weight: 600; font-family: 'Outfit', sans-serif; cursor: pointer; transition: all 0.2s;">
+          <span class="icon">🛑</span> ยกเลิกการแปล
+        </button>
+        
+        <div class="toggle-row hidden" id="toggle-row">
+          <button class="btn btn-secondary flex-grow" id="btn-toggle-view">
+            👁️ สลับมุมมอง (แปล/ต้นฉบับ)
+          </button>
+        </div>
+      </div>
+
+      <!-- Processing Status Box -->
+      <div class="card glass hidden" id="status-card">
+        <div class="status-progress-info">
+          <span class="status-msg" id="status-progress-msg">กำลังสแกนรูปภาพ...</span>
+          <span class="percent" id="status-progress-percent">0%</span>
+        </div>
+        <div class="progress-bar-container">
+          <div class="progress-bar-fill" id="progress-bar-fill"></div>
+        </div>
+        <p class="status-sub" id="status-progress-sub">กำลังติดต่อเซิร์ฟเวอร์...</p>
+      </div>
+
+      <!-- Learn-as-you-go / Pending Terms (Placeholder) -->
+      <div class="card glass hidden" id="terms-card">
+        <div class="terms-header">
+          <h3>📝 ศัพท์ใหม่ที่พบรออนุมัติ</h3>
+          <span class="badge" id="terms-count">0</span>
+        </div>
+        <div class="terms-list" id="terms-list">
+          <!-- Dynamically filled -->
+        </div>
+      </div>
+
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="app-footer">
+      <button class="btn-icon-link" id="btn-options" title="ตั้งค่าตัวเลือก">
+        ⚙️ เปิดหน้าตั้งค่า (Settings & Profiles)
+      </button>
+    </footer>
+  </div>
+  <script type="module" src="popup.js"></script>
+</body>
+</html>

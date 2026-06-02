@@ -1,0 +1,55 @@
+diff --git a/extension_shared.7z b/extension_shared.7z
+new file mode 100644
+index 0000000..5151721
+Binary files /dev/null and b/extension_shared.7z differ
+diff --git a/server/config.py b/server/config.py
+index 5326cd8..793fa06 100644
+--- a/server/config.py
++++ b/server/config.py
+@@ -6,7 +6,7 @@
+ 
+ # Root directory of the ScanLate project
+ ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+-ENV_PATH = os.path.join(os.path.dirname(__file__), ".env")
++ENV_PATH = os.path.join(ROOT_DIR, ".env")
+ 
+ # Server Configurations
+ SERVER_PORT = int(os.getenv("SERVER_PORT", "8745"))
+@@ -26,7 +26,21 @@ def update_client_access_keys(keys_list: list[str]):
+         open(ENV_PATH, 'a').close()
+     set_key(ENV_PATH, "CLIENT_ACCESS_KEYS", keys_str)
+ 
+-
++def update_llm_config_env(provider: str, model: str, api_key: str = "", ollama_url: str = ""):
++    if not os.path.exists(ENV_PATH):
++        open(ENV_PATH, 'a').close()
++    
++    set_key(ENV_PATH, "LLM_PROVIDER", provider)
++    set_key(ENV_PATH, "LLM_MODEL", model)
++    
++    if provider == "gemini":
++        set_key(ENV_PATH, "GOOGLE_API_KEY", api_key)
++    elif provider == "openrouter":
++        set_key(ENV_PATH, "OPENROUTER_API_KEY", api_key)
++    elif provider == "openai":
++        set_key(ENV_PATH, "OPENAI_API_KEY", api_key)
++    elif provider == "ollama":
++        set_key(ENV_PATH, "OLLAMA_URL", ollama_url)
+ 
+ # GPU Settings
+ DEVICE = os.getenv("DEVICE", "cuda")
+diff --git a/server/llm/client.py b/server/llm/client.py
+index c076f21..cf1b739 100644
+--- a/server/llm/client.py
++++ b/server/llm/client.py
+@@ -38,6 +38,10 @@ def update_config(self, provider: str, model: str, api_key: str = "", ollama_url
+             os.environ["OPENAI_API_KEY"] = api_key
+         elif provider == "ollama":
+             config.OLLAMA_URL = ollama_url or "http://localhost:11434"
++            
++        # Save to .env persistently
++        config.update_llm_config_env(provider, model, api_key, ollama_url)
++        
+         logger.info(f"LLM config updated: provider={provider}, model={model}")
+ 
+     def _setup_keys(self):
