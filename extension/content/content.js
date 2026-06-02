@@ -237,18 +237,18 @@
 
   // Binary search auto-font sizing to fit speech text inside box boundaries
   function calculateOptimalFontSize(text, boxWidth, boxHeight) {
-    let low = 10;
-    let high = 80;
-    let optimal = 11;
+    let low = 12; // increased minimum font size for readability
+    let high = 32; // capped maximum font size so it doesn't get ridiculously large
+    let optimal = 14;
     
     // Create temporary offscreen element for measurement
     const measurer = document.createElement("div");
     measurer.className = "scanlate-measurer";
     measurer.style.width = `${boxWidth}px`;
-    // Force CSS overrides to bypass browser cache and prevent breaking Thai words
-    measurer.style.wordWrap = "normal";
-    measurer.style.wordBreak = "normal";
-    measurer.style.overflowWrap = "normal";
+    
+    // Allow text to wrap naturally like the real bubble
+    measurer.style.wordWrap = "break-word";
+    measurer.style.wordBreak = "break-word";
     
     renderTextWithNoBreak(measurer, text);
     document.body.appendChild(measurer);
@@ -257,9 +257,11 @@
       const mid = Math.floor((low + high) / 2);
       measurer.style.fontSize = `${mid}px`;
       
-      // We check if rendered height and width overflow coordinate boundaries
-      // Relax height constraints (4.0x) because OCR bounding boxes are often very tight vertically, and Thai text has tall tone marks
-      if (measurer.offsetHeight <= boxHeight * 4.0 && measurer.scrollWidth <= boxWidth * 1.1) {
+      // Use a much stricter height limit (1.3x) so it stays inside the box.
+      // It won't be tiny anymore because word-wrap: break-word allows it to use multiple lines.
+      const maxHeightLimit = boxHeight * 1.3;
+
+      if (measurer.offsetHeight <= maxHeightLimit && measurer.scrollWidth <= boxWidth * 1.1) {
         optimal = mid;
         low = mid + 1; // Try bigger font size
       } else {
@@ -361,8 +363,7 @@
       bubble.style.left = `${leftPercent}%`;
       bubble.style.top = `${topPercent}%`;
       bubble.style.width = `${widthPercent}%`;
-      bubble.style.minHeight = `${heightPercent}%`;
-      bubble.style.height = `auto`;
+      bubble.style.height = `${heightPercent}%`;
       bubble.style.backgroundColor = colors.bg;
       bubble.style.color = colors.fg;
       bubble.style.fontSize = `${optimalFontSize}px`;

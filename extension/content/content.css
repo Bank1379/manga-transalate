@@ -49,9 +49,9 @@
   visibility: hidden;
   height: auto;
   white-space: normal;
-  word-wrap: normal;
-  word-break: normal;
-  overflow-wrap: normal;
+  word-wrap: break-word;
+  word-break: break-word;
+  overflow-wrap: break-word;
   font-family: 'Kanit', 'Kanit-Bold', sans-serif;
   font-weight: 700;
   line-height: 1.25;
