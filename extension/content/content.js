@@ -277,6 +277,70 @@
   function renderTranslationOverlays(imgElement, detectedTexts) {
     const wrapper = wrapMangaImage(imgElement);
     
+    // Group boxes that belong to the same speech bubble
+    const mergedGroups = [];
+    const used = new Set();
+    
+    for (let i = 0; i < detectedTexts.length; i++) {
+        if (used.has(i)) continue;
+        const group = [i];
+        used.add(i);
+        
+        for (let j = 0; j < detectedTexts.length; j++) {
+            if (used.has(j)) continue;
+            
+            let belongsToGroup = false;
+            for (let k of group) {
+                const b1 = detectedTexts[k].bbox;
+                const b2 = detectedTexts[j].bbox;
+                
+                const height1 = b1[3] - b1[1];
+                const height2 = b2[3] - b2[1];
+                const minHeight = Math.min(height1, height2);
+                
+                const hOverlap = Math.max(0, Math.min(b1[2], b2[2]) - Math.max(b1[0], b2[0]));
+                const minWidth = Math.min(b1[2]-b1[0], b2[2]-b2[0]);
+                
+                // Must have strict horizontal overlap
+                const isHorizontallyAligned = hOverlap > (minWidth * 0.1);
+                
+                const vGap = Math.max(0, Math.max(b1[1], b2[1]) - Math.min(b1[3], b2[3]));
+                
+                // Gap must be very small (less than 80% of the smaller text height) to prevent huge box creation
+                const isVerticallyClose = vGap <= (minHeight * 0.8);
+                
+                if (isHorizontallyAligned && isVerticallyClose) {
+                    belongsToGroup = true;
+                    break;
+                }
+            }
+            if (belongsToGroup) {
+                group.push(j);
+                used.add(j);
+                j = -1; // re-scan
+            }
+        }
+        
+        let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+        group.forEach(idx => {
+            const b = detectedTexts[idx].bbox;
+            minX = Math.min(minX, b[0]);
+            minY = Math.min(minY, b[1]);
+            maxX = Math.max(maxX, b[2]);
+            maxY = Math.max(maxY, b[3]);
+        });
+        
+        // Sort group indices vertically to ensure correct reading order
+        group.sort((a, b) => detectedTexts[a].bbox[1] - detectedTexts[b].bbox[1]);
+        
+        mergedGroups.push({
+            indices: group,
+            bbox: [minX, minY, maxX, maxY],
+            text_color: detectedTexts[group[0]].text_color,
+            translated: group.map(idx => detectedTexts[idx].translated || "").join(" ").trim()
+        });
+    }
+    
     // Clear old container if exists
     const oldContainer = wrapper.querySelector(".scanlate-overlay-container");
     if (oldContainer) {
@@ -297,7 +361,7 @@
     // Set initial size details for proportional font scaling on resize
     wrapper._initialWidth = imgElement.clientWidth || naturalWidth;
     
-    detectedTexts.forEach((box, index) => {
+    mergedGroups.forEach((box) => {
       let [minX, minY, maxX, maxY] = box.bbox;
       
       // Inflate bounding box slightly to ensure original text is fully covered
@@ -365,6 +429,7 @@
       bubble.style.width = `${widthPercent}%`;
       bubble.style.height = `${heightPercent}%`;
       bubble.style.backgroundColor = colors.bg;
+      bubble.style.boxShadow = `0 0 4px 10px ${colors.bg}`;
       bubble.style.color = colors.fg;
       bubble.style.fontSize = `${optimalFontSize}px`;
 
@@ -374,7 +439,10 @@
       
       // Save base font size on the bubble element for proportional scaling on resize
       bubble._baseFontSize = optimalFontSize;
-      bubble.dataset.index = index;
+      bubble.dataset.indices = JSON.stringify(box.indices);
+      box.indices.forEach(idx => {
+        bubble.dataset[`text_${idx}`] = detectedTexts[idx].translated || "";
+      });
             // Feature: Right-click to open context menu
         bubble.addEventListener("contextmenu", (e) => {
           e.preventDefault(); // Prevent default browser right-click menu
@@ -905,18 +973,21 @@ function showBubbleContextMenu(bubble, x, y) {
   // Event Listeners
   menu.querySelector("#ctx-light").addEventListener("click", () => {
     bubble.style.backgroundColor = 'rgb(245, 245, 245)';
+    bubble.style.boxShadow = '0 0 4px 10px rgb(245, 245, 245)';
     bubble.style.color = 'rgb(30, 30, 30)';
     bubble.style.textShadow = '-1px -1px 2px rgba(255,255,255,0.95), 1px -1px 2px rgba(255,255,255,0.95), -1px 1px 2px rgba(255,255,255,0.95), 1px 1px 2px rgba(255,255,255,0.95)';
   });
 
   menu.querySelector("#ctx-dark").addEventListener("click", () => {
     bubble.style.backgroundColor = 'rgb(30, 30, 30)';
+    bubble.style.boxShadow = '0 0 4px 10px rgb(30, 30, 30)';
     bubble.style.color = 'rgb(245, 245, 245)';
     bubble.style.textShadow = '-1px -1px 2px rgba(0,0,0,0.95), 1px -1px 2px rgba(0,0,0,0.95), -1px 1px 2px rgba(0,0,0,0.95), 1px 1px 2px rgba(0,0,0,0.95)';
   });
 
   menu.querySelector("#ctx-bg-color").addEventListener("input", (e) => {
     bubble.style.backgroundColor = e.target.value;
+    bubble.style.boxShadow = `0 0 4px 10px ${e.target.value}`;
   });
 
   menu.querySelector("#ctx-fg-color").addEventListener("input", (e) => {
