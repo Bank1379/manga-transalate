@@ -239,3 +239,16 @@
   cursor: pointer;
   background: transparent;
 }
+
+
+/* Manual Selection Tool */
+.scanlate-selection-box {
+    position: absolute;
+    border: 2px dashed #8b5cf6;
+    background: rgba(139, 92, 246, 0.2);
+    z-index: 10002;
+    pointer-events: none;
+}
+.scanlate-wrapper.crosshair-active img {
+    cursor: crosshair !important;
+}

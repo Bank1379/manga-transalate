@@ -37,7 +37,7 @@ class EngineClient:
             "translator": {
                 "translator": "none",
                 "target_lang": target_engine_lang.upper(),
-                "no_text_lang_skip": False if is_auto else True
+                "no_text_lang_skip": True
             },
             "inpainter": {
                 "inpainter": "none"

@@ -158,6 +158,56 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           break;
         }
 
+        case "translateManualRegion": {
+            const { imageUrl, bbox, manualId } = message;
+            try {
+                const response = await fetch(imageUrl);
+                if (!response.ok) throw new Error("Failed to fetch image");
+                const imageBuffer = await response.arrayBuffer();
+                
+                const { serverUrl, serverPassword, ocrProvider, ocrModelSlug, ocrApiKey, llmProvider, llmModel, llmApiKey } = await chrome.storage.local.get([
+                    "serverUrl", "serverPassword", "ocrProvider", "ocrModelSlug", "ocrApiKey", "llmProvider", "llmModel", "llmApiKey"
+                ]);
+                
+                const formData = new FormData();
+                formData.append("image", new Blob([imageBuffer]), "image.png");
+                formData.append("bbox", JSON.stringify(bbox));
+                formData.append("source_lang", "auto"); // or fetch from settings
+                
+                // Add keys
+                if (ocrProvider) formData.append("ocr_provider", ocrProvider);
+                if (ocrModelSlug) formData.append("ocr_model", ocrModelSlug);
+                if (ocrApiKey) formData.append("ocr_api_key", ocrApiKey);
+                if (llmProvider) formData.append("llm_provider", llmProvider);
+                if (llmModel) formData.append("llm_model", llmModel);
+                if (llmApiKey) formData.append("llm_api_key", llmApiKey);
+                
+                const headers = {};
+                if (serverPassword) headers["X-Access-Key"] = serverPassword;
+                
+                const baseUrl = serverUrl || "http://127.0.0.1:8745";
+                
+                const res = await fetch(`${baseUrl}/translate/region`, {
+                    method: "POST",
+                    headers: headers,
+                    body: formData
+                });
+                
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                const data = await res.json();
+                
+                chrome.tabs.sendMessage(tabId, {
+                    action: "manualTranslationComplete",
+                    manualId: manualId,
+                    translatedText: data.translated,
+                    colors: data.colors
+                });
+            } catch (err) {
+                chrome.tabs.sendMessage(tabId, { action: "manualTranslationError", manualId: manualId, error: err.message });
+            }
+            break;
+        }
+
         case "translateImage": {
           const { imageUrl, sourceLang, profileName, ocrModel, contextJson, useMultimodal, useGeminiOcr, useAutoGlossary, dialogueOnly, ocrProvider, ocrModelSlug, ocrApiKey, llmProvider, llmModel, llmApiKey, imageIndex, totalImages } = message;
           Logger.info(`Proxy-translating image URL: ${imageUrl} using profile: ${profileName}`, "ServiceWorker");

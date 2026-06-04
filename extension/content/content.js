@@ -556,9 +556,10 @@
         // Fallback: If real-time translation chunks were dropped, update using the final payload
         if (event.translations && streamState.texts) {
             event.translations.forEach((text, index) => {
-                if (text && streamState.texts[index] && !streamState.texts[index].translated) {
-                    streamState.texts[index].translated = text;
-                    updateBubbleText(streamState.img, index, text);
+                if (streamState.texts[index] && streamState.texts[index].translated === "") {
+                    const finalTxt = (text !== undefined && text !== null) ? text : "";
+                    streamState.texts[index].translated = finalTxt;
+                    updateBubbleText(streamState.img, index, finalTxt);
                 }
             });
         }
@@ -576,6 +577,17 @@
         if (streamState.resolve) streamState.resolve();
       } else if (event.type === "error" || event.type === "stream_closed") {
         if (streamState.loader) streamState.loader.remove();
+        
+        // Hide all bubbles that are still loading
+        if (streamState.texts) {
+            streamState.texts.forEach((box, index) => {
+                if (box.translated === undefined) {
+                    box.translated = "";
+                    updateBubbleText(streamState.img, index, "");
+                }
+            });
+        }
+        
         delete currentTranslationStreams[imageUrl];
         if (streamState.reject) streamState.reject(new Error(event.message || "Translation interrupted by server disconnection"));
       }
@@ -625,10 +637,24 @@
     const container = wrapper.querySelector(".scanlate-overlay-container");
     if (!container) return;
     
-    const bubble = container.querySelector(`.scanlate-bubble-overlay[data-index="${index}"]`);
+    const bubbles = Array.from(container.querySelectorAll(".scanlate-bubble-overlay"));
+    const bubble = bubbles.find(b => {
+        try {
+            const indices = JSON.parse(b.dataset.indices || "[]");
+            return indices.includes(Number(index));
+        } catch (e) { return false; }
+    });
+    
     if (bubble) {
-        // Clean up translated text (strip leading/trailing ellipses and punctuation)
-        let displayText = text || "";
+        // Save the updated text for this specific index
+        bubble.dataset[`text_${index}`] = text || "";
+        
+        // Rebuild full text from all indices in this merged bubble
+        let indices = [];
+        try { indices = JSON.parse(bubble.dataset.indices || "[]"); } catch (e) {}
+        
+        let fullText = indices.map(idx => bubble.dataset[`text_${idx}`] || "").join(" ").trim();
+        let displayText = fullText;
         displayText = displayText.replace(/^[\.…,\-~]*\s*/, '').replace(/\s*[\.…,\-~]*$/, '');
         
         if (!displayText) {
@@ -828,6 +854,18 @@
       } catch (err) {
         console.error(`ScanLate: Failed to translate image index ${i}:`, err);
         if (loader.parentNode) loader.remove();
+        
+        // Hide stranded bubbles for this image
+        const streamState = currentTranslationStreams[img.src];
+        if (streamState && streamState.texts) {
+            streamState.texts.forEach((box, idx) => {
+                if (!box.translated || box.translated === "") {
+                    box.translated = " "; // Prevent future checks
+                    updateBubbleText(img, idx, "");
+                }
+            });
+            delete currentTranslationStreams[img.src];
+        }
       }
     }
 
@@ -908,6 +946,7 @@
       }
   });
   domObserver.observe(document.body, { childList: true, subtree: true });
+
 
 })();
 

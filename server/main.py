@@ -315,6 +315,103 @@ async def translate_image(
             logger.error(f"Error processing translation: {e}")
             raise HTTPException(500, detail=str(e))
 
+
+@app.post("/translate/region", dependencies=[Depends(verify_access_key)])
+async def translate_region(
+    image: UploadFile = File(...),
+    bbox: str = Form(...),
+    source_lang: str = Form("auto"),
+    ocr_provider: Optional[str] = Form(None),
+    ocr_model: Optional[str] = Form(None),
+    ocr_api_key: Optional[str] = Form(None),
+    llm_provider: Optional[str] = Form(None),
+    llm_model: Optional[str] = Form(None),
+    llm_api_key: Optional[str] = Form(None),
+):
+    import json
+    import io
+    from PIL import Image
+    from server.engine import gemini_ocr, llm_client
+    
+    try:
+        box = json.loads(bbox) # [minX, minY, maxX, maxY]
+        image_bytes = await image.read()
+        
+        # Open image and crop
+        img = Image.open(io.BytesIO(image_bytes))
+        cropped = img.crop((box[0], box[1], box[2], box[3]))
+        
+        # Convert cropped image back to bytes for Gemini
+        crop_bytes_io = io.BytesIO()
+        cropped.save(crop_bytes_io, format="PNG")
+        crop_bytes = crop_bytes_io.getvalue()
+        
+        # Find background color dynamically by sampling edges of the crop
+        edge_colors = []
+        width, height = cropped.size
+        # sample top/bottom
+        for x in range(0, width, max(1, width//5)):
+            edge_colors.append(cropped.getpixel((x, 0)))
+            edge_colors.append(cropped.getpixel((x, height-1)))
+        # sample left/right
+        for y in range(0, height, max(1, height//5)):
+            edge_colors.append(cropped.getpixel((0, y)))
+            edge_colors.append(cropped.getpixel((width-1, y)))
+            
+        def get_luminance(rgb):
+            if len(rgb) == 4: # RGBA
+                rgb = rgb[:3]
+            return 0.299*rgb[0] + 0.587*rgb[1] + 0.114*rgb[2]
+            
+        edge_colors.sort(key=get_luminance)
+        median_rgb = edge_colors[len(edge_colors)//2]
+        if len(median_rgb) == 4:
+            median_rgb = median_rgb[:3]
+        
+        lum = get_luminance(median_rgb)
+        fg_rgb = (0,0,0) if lum > 130 else (255,255,255)
+        
+        colors = {
+            "bg": f"rgb({median_rgb[0]}, {median_rgb[1]}, {median_rgb[2]})",
+            "fg": f"rgb({fg_rgb[0]}, {fg_rgb[1]}, {fg_rgb[2]})"
+        }
+        
+        # Use LLM OCR to read the text
+        # Since extract_text_with_gemini takes regions list, we mock it
+        mock_regions = [{"bbox": [0,0,width,height], "text": ""}]
+        updated_regions = await gemini_ocr.extract_text_with_gemini(
+            crop_bytes, 
+            mock_regions, 
+            llm_client.get_llm_client(),
+            ocr_provider=ocr_provider,
+            ocr_model=ocr_model,
+            ocr_api_key=ocr_api_key
+        )
+        
+        extracted_text = updated_regions[0]["text"]
+        
+        if not extracted_text:
+            return {"translated": "", "colors": colors}
+            
+        # Translate the text
+        lc = llm_client.get_llm_client()
+        translated_text = await lc.translate_texts(
+            [extracted_text], 
+            source_lang,
+            provider_override=llm_provider,
+            model_override=llm_model,
+            api_key_override=llm_api_key
+        )
+        
+        return {
+            "translated": translated_text[0],
+            "colors": colors
+        }
+    except Exception as e:
+        logger.error(f"Error in translate_region: {e}")
+        return JSONResponse(status_code=500, content={"detail": str(e)})
+
+
 @app.post("/translate/stream", dependencies=[Depends(verify_access_key)])
 async def translate_stream(
     image: Optional[UploadFile] = File(None),

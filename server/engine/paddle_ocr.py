@@ -37,6 +37,7 @@ class PaddleOCRClient:
     """
 
     _instances: Dict[str, Any] = {}
+    _lock = __import__("threading").Lock()
 
     @classmethod
     def _get_ocr(cls, lang: str):
@@ -115,9 +116,10 @@ class PaddleOCRClient:
 
         import cv2
 
-        result_normal = ocr.ocr(img_np)
-        inverted_img_np = cv2.bitwise_not(img_np)
-        result_inverted = ocr.ocr(inverted_img_np)
+        with self._lock:
+            result_normal = ocr.ocr(img_np)
+            inverted_img_np = cv2.bitwise_not(img_np)
+            result_inverted = ocr.ocr(inverted_img_np)
 
         normal_pages = result_normal if result_normal and result_normal[0] is not None else []
         inverted_pages = result_inverted if result_inverted and result_inverted[0] is not None else []
