@@ -25,8 +25,17 @@ from server.llm.client import reset_llm_client
 from server.profiles import manager as profile_manager
 from server.cache import manager as cache_manager
 
-async def verify_access_key(request: Request, x_access_key: Optional[str] = Header(None)):
-    is_local = request.client and request.client.host in ("127.0.0.1", "localhost", "::1")
+import ipaddress
+
+def is_private_ip(ip_str: str) -> bool:
+    try:
+        ip = ipaddress.ip_address(ip_str)
+        return ip.is_private or ip.is_loopback
+    except ValueError:
+        return False
+
+async def verify_access_key(request: Request, x_access_key: str = Header(None)):
+    is_local = request.client and is_private_ip(request.client.host)
     forwarded = request.headers.get("x-forwarded-for") or request.headers.get("x-real-ip")
     
     # If the request explicitly provides the X-Access-Key header (like the Shared Extension does),
@@ -38,17 +47,17 @@ async def verify_access_key(request: Request, x_access_key: Optional[str] = Head
             raise HTTPException(status_code=401, detail="Invalid Access Key")
         return
         
-    # If NO access key header is provided (Main Extension), allow ONLY if it's a true local request
+    # If NO access key header is provided (Main Extension), allow ONLY if it's a true local/LAN request
     if is_local and not forwarded:
         return
         
     raise HTTPException(status_code=401, detail="Missing Access Key")
 
 async def verify_localhost(request: Request):
-    is_local = request.client and request.client.host in ("127.0.0.1", "localhost", "::1")
+    is_local = request.client and is_private_ip(request.client.host)
     forwarded = request.headers.get("x-forwarded-for") or request.headers.get("x-real-ip")
     if not is_local or forwarded:
-        raise HTTPException(status_code=403, detail="Localhost access only")
+        raise HTTPException(status_code=403, detail="Local/LAN access only")
 
 # Setup logging
 logging.basicConfig(level=logging.INFO)
