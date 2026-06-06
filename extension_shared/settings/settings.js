@@ -132,6 +132,10 @@ async function saveServerSettings() {
 // ─────────────────────────────────────────────
 async function refreshServerStatus() {
   const url = $("input-server-url").value.trim() || "http://127.0.0.1:8745";
+  const accessKey = $("input-client-access-key").value.trim();
+  const headers = {};
+  if (accessKey) headers["X-Access-Key"] = accessKey;
+  
   const dot  = $("server-pill").querySelector(".pill-dot");
   const pill = $("pill-text");
 
@@ -139,7 +143,10 @@ async function refreshServerStatus() {
   pill.textContent = "กำลังเชื่อมต่อ...";
 
   try {
-    const resp = await fetch(`${url}/status`, { signal: AbortSignal.timeout(4000) });
+    const resp = await fetch(`${url}/status`, { 
+        headers, 
+        signal: AbortSignal.timeout(4000) 
+    });
     if (!resp.ok) throw new Error("not ok");
     const data = await resp.json();
 
@@ -235,10 +242,14 @@ async function saveAdvancedSettings() {
 // ─────────────────────────────────────────────
 async function loadProfiles() {
   const serverUrl = $("input-server-url").value.trim() || "http://127.0.0.1:8745";
+  const accessKey = $("input-client-access-key").value.trim();
+  const headers = {};
+  if (accessKey) headers["X-Access-Key"] = accessKey;
+  
   const list = $("profiles-list");
   list.innerHTML = `<div class="profile-empty">กำลังโหลด...</div>`;
   try {
-    const resp = await fetch(`${serverUrl}/profiles`);
+    const resp = await fetch(`${serverUrl}/profiles`, { headers });
     const data = await resp.json();
     const profiles = data.profiles || [];
     if (profiles.length === 0) {
@@ -271,8 +282,12 @@ async function loadProfiles() {
 
 async function editProfile(name) {
   const serverUrl = $("input-server-url").value.trim() || "http://127.0.0.1:8745";
+  const accessKey = $("input-client-access-key").value.trim();
+  const headers = {};
+  if (accessKey) headers["X-Access-Key"] = accessKey;
+  
   try {
-    const resp = await fetch(`${serverUrl}/profiles/${encodeURIComponent(name)}`);
+    const resp = await fetch(`${serverUrl}/profiles/${encodeURIComponent(name)}`, { headers });
     const data = await resp.json();
     $("profile-name-input").value = name;
     $("profile-content").value = data.content || "";
@@ -287,10 +302,14 @@ async function saveProfile() {
   const content = $("profile-content").value;
   if (!name) { showToast("กรุณาใส่ชื่อ Profile", true); return; }
   const serverUrl = $("input-server-url").value.trim() || "http://127.0.0.1:8745";
+  const accessKey = $("input-client-access-key").value.trim();
+  const headers = { "Content-Type": "application/json" };
+  if (accessKey) headers["X-Access-Key"] = accessKey;
+  
   try {
     const resp = await fetch(`${serverUrl}/profiles/${encodeURIComponent(name)}`, {
       method: "PUT",
-      headers: { "Content-Type": "application/json" },
+      headers: headers,
       body: JSON.stringify({ content })
     });
     if (!resp.ok) throw new Error("Save failed");
