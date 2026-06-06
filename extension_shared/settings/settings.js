@@ -133,7 +133,9 @@ async function saveServerSettings() {
 async function refreshServerStatus() {
   const url = $("input-server-url").value.trim() || "http://127.0.0.1:8745";
   const accessKey = $("input-client-access-key").value.trim();
-  const headers = {};
+  const headers = {
+    "ngrok-skip-browser-warning": "true"
+  };
   if (accessKey) headers["X-Access-Key"] = accessKey;
   
   const dot  = $("server-pill").querySelector(".pill-dot");
@@ -243,7 +245,9 @@ async function saveAdvancedSettings() {
 async function loadProfiles() {
   const serverUrl = $("input-server-url").value.trim() || "http://127.0.0.1:8745";
   const accessKey = $("input-client-access-key").value.trim();
-  const headers = {};
+  const headers = {
+    "ngrok-skip-browser-warning": "true"
+  };
   if (accessKey) headers["X-Access-Key"] = accessKey;
   
   const list = $("profiles-list");
@@ -283,7 +287,9 @@ async function loadProfiles() {
 async function editProfile(name) {
   const serverUrl = $("input-server-url").value.trim() || "http://127.0.0.1:8745";
   const accessKey = $("input-client-access-key").value.trim();
-  const headers = {};
+  const headers = {
+    "ngrok-skip-browser-warning": "true"
+  };
   if (accessKey) headers["X-Access-Key"] = accessKey;
   
   try {
@@ -303,7 +309,10 @@ async function saveProfile() {
   if (!name) { showToast("กรุณาใส่ชื่อ Profile", true); return; }
   const serverUrl = $("input-server-url").value.trim() || "http://127.0.0.1:8745";
   const accessKey = $("input-client-access-key").value.trim();
-  const headers = { "Content-Type": "application/json" };
+  const headers = { 
+    "Content-Type": "application/json",
+    "ngrok-skip-browser-warning": "true"
+  };
   if (accessKey) headers["X-Access-Key"] = accessKey;
   
   try {

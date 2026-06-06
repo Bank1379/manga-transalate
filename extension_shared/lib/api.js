@@ -12,7 +12,9 @@ export class ScanLateAPI {
     static async getStatus() {
         const baseUrl = await this.getBaseUrl();
         const accessKey = await this.getAccessKey();
-        const headers = {};
+        const headers = {
+            "ngrok-skip-browser-warning": "true"
+        };
         if (accessKey) headers["X-Access-Key"] = accessKey;
 
         try {
@@ -31,7 +33,9 @@ export class ScanLateAPI {
     static async getProfiles() {
         const baseUrl = await this.getBaseUrl();
         const accessKey = await this.getAccessKey();
-        const headers = {};
+        const headers = {
+            "ngrok-skip-browser-warning": "true"
+        };
         if (accessKey) headers["X-Access-Key"] = accessKey;
 
         try {
@@ -49,7 +53,9 @@ export class ScanLateAPI {
     static async translateImageStream(imageBuffer, sourceLang, profileName, ocrModel, contextJson, imageIndex, totalImages, useMultimodal, useGeminiOcr, useAutoGlossary, dialogueOnly, ocrProvider, ocrModelSlug, ocrApiKey, llmProvider, llmModel, llmApiKey, callback, abortSignal) {
         const baseUrl = await this.getBaseUrl();
         const accessKey = await this.getAccessKey();
-        const headers = {};
+        const headers = {
+            "ngrok-skip-browser-warning": "true"
+        };
         if (accessKey) headers["X-Access-Key"] = accessKey;
 
         const formData = new FormData();
