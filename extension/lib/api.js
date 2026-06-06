@@ -1,7 +1,8 @@
 export class ScanLateAPI {
     static async getBaseUrl() {
         const res = await chrome.storage.local.get("serverUrl");
-        return res.serverUrl || "http://127.0.0.1:8745";
+        let url = res.serverUrl || "http://127.0.0.1:8745";
+        return url.replace(/\/+$/, "");
     }
 
     static async getAccessKey() {
