@@ -1,12 +1,12 @@
 import os
 from dotenv import load_dotenv, set_key
 
-# Load .env file if exists
-load_dotenv()
-
 # Root directory of the ScanLate project
 ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 ENV_PATH = os.path.join(ROOT_DIR, ".env")
+
+# Load .env file if exists
+load_dotenv(ENV_PATH)
 
 # Server Configurations
 SERVER_PORT = int(os.getenv("SERVER_PORT", "8745"))
